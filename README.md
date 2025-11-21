@@ -1,6 +1,6 @@
 # Product Catalog Microservice
 
-A REST API microservice for managing a product catalog, built with Java 21 and Spring Boot 3.
+A REST API microservice for managing a product catalog, built with Java 25 and Spring Boot 3.5.
 
 ## Features
 
@@ -10,25 +10,26 @@ A REST API microservice for managing a product catalog, built with Java 21 and S
 - ✅ MySQL database with Docker support
 - ✅ Swagger/OpenAPI documentation
 - ✅ Unit tests with 80%+ code coverage (JaCoCo)
-- ✅ Lombok for reduced boilerplate code
+- ✅ Java 25 with Spring Boot 3.5.7
+- ✅ Lombok 1.18.40 for clean code
 
 ## Technologies
 
-- **Java 21**
-- **Spring Boot 3.2.0**
+- **Java 25** (Latest LTS)
+- **Spring Boot 3.5.7**
 - **Spring Data JPA**
 - **MySQL 8.0**
 - **Docker & Docker Compose**
-- **Lombok**
+- **Lombok 1.18.40** (Java 25 compatible)
 - **Swagger/OpenAPI (SpringDoc)**
-- **JaCoCo** (Code Coverage)
+- **JaCoCo 0.8.14** (Code Coverage)
 - **JUnit 5 & Mockito** (Testing)
 
 ## Prerequisites
 
 Make sure you have the following installed on your machine:
 
-- Java JDK 21
+- Java JDK 25
 - Maven 3.8+
 - Docker Desktop
 - Git
