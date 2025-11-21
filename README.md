@@ -79,15 +79,15 @@ Once the application is running, access the API documentation at:
 
 ## API Endpoints
 
-| HTTP Method | Endpoint | Description |
-|-------------|----------|-------------|
-| `POST` | `/products` | Create a new product |
-| `PUT` | `/products/{id}` | Update an existing product |
-| `GET` | `/products/{id}` | Get a product by ID |
-| `GET` | `/products` | Get all products |
-| `GET` | `/products/search` | Search products with filters |
-| `DELETE` | `/products/{id}` | Delete a product |
-| `DELETE` | `/products` | Delete all products |
+| HTTP Method | Endpoint           | Description                  |
+| ----------- | ------------------ | ---------------------------- |
+| `POST`      | `/products`        | Create a new product         |
+| `PUT`       | `/products/{id}`   | Update an existing product   |
+| `GET`       | `/products/{id}`   | Get a product by ID          |
+| `GET`       | `/products`        | Get all products             |
+| `GET`       | `/products/search` | Search products with filters |
+| `DELETE`    | `/products/{id}`   | Delete a product             |
+| `DELETE`    | `/products`        | Delete all products          |
 
 ### Product Model
 
@@ -141,16 +141,19 @@ curl http://localhost:8085/products
 #### Search Products
 
 Search by query (name or description):
+
 ```bash
 curl "http://localhost:8085/products/search?q=laptop"
 ```
 
 Search by price range:
+
 ```bash
 curl "http://localhost:8085/products/search?min_price=100&max_price=2000"
 ```
 
 Combined search:
+
 ```bash
 curl "http://localhost:8085/products/search?q=laptop&min_price=1000&max_price=2000"
 ```
@@ -190,6 +193,48 @@ curl -X DELETE http://localhost:8085/products
 ### Not Found (404 Not Found)
 
 When a product is not found, the API returns HTTP 404 with no response body.
+
+## Security
+
+This application implements several security best practices:
+
+### ✅ Implemented Security Measures
+
+#### 1. **SQL Injection Protection**
+
+- Uses **JPA with parameterized queries** (`@Param`)
+- All database queries use prepared statements
+- No raw SQL string concatenation
+
+#### 2. **Input Validation**
+
+- **Bean Validation** on all input data
+- `@NotBlank` validation for required text fields
+- `@DecimalMin` validation for positive prices
+- Type-safe data structures (BigDecimal for money)
+
+#### 3. **Mass Assignment Protection**
+
+- Uses **DTOs** (Data Transfer Objects) instead of exposing entities
+- Entity IDs are server-generated, not user-provided
+- Clear separation between API models and database entities
+
+#### 4. **Error Information Disclosure Prevention**
+
+- Generic error messages for unexpected errors
+- No stack traces exposed to clients
+- Structured error responses with appropriate HTTP status codes
+
+#### 5. **XSS (Cross-Site Scripting) Protection**
+
+- Spring Boot's Jackson automatically escapes JSON output
+- Content-Type headers properly set
+
+#### 6. **Data Integrity**
+
+- Database constraints (NOT NULL, precision, length limits)
+- Transactional operations for data consistency
+- Duplicate product validation
 
 ## Running Tests
 
@@ -323,4 +368,3 @@ This project is developed as part of a technical assessment.
 ---
 
 **Happy Coding!** 🚀
-
