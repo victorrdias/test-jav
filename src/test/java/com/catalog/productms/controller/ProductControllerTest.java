@@ -2,6 +2,7 @@ package com.catalog.productms.controller;
 
 import com.catalog.productms.dto.ProductRequest;
 import com.catalog.productms.entity.Product;
+import com.catalog.productms.exception.ProductAlreadyExistsException;
 import com.catalog.productms.exception.ProductNotFoundException;
 import com.catalog.productms.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,6 +66,21 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.name").value("Test Product"))
                 .andExpect(jsonPath("$.description").value("Test Description"))
                 .andExpect(jsonPath("$.price").value(99.99));
+
+        verify(productService, times(1)).createProduct(any(ProductRequest.class));
+    }
+
+    @Test
+    void createProduct_WithDuplicateNameAndDescription_ShouldReturn400() throws Exception {
+        when(productService.createProduct(any(ProductRequest.class)))
+                .thenThrow(new ProductAlreadyExistsException("Product already exists"));
+
+        mockMvc.perform(post("/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(productRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status_code").value(400))
+                .andExpect(jsonPath("$.message").value("Product already exists"));
 
         verify(productService, times(1)).createProduct(any(ProductRequest.class));
     }
@@ -251,6 +267,16 @@ class ProductControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(productService, times(1)).deleteProduct("999");
+    }
+
+    @Test
+    void deleteAllProducts_ShouldReturn204() throws Exception {
+        doNothing().when(productService).deleteAllProducts();
+
+        mockMvc.perform(delete("/products"))
+                .andExpect(status().isNoContent());
+
+        verify(productService, times(1)).deleteAllProducts();
     }
 }
 

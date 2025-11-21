@@ -2,6 +2,7 @@ package com.catalog.productms.service;
 
 import com.catalog.productms.dto.ProductRequest;
 import com.catalog.productms.entity.Product;
+import com.catalog.productms.exception.ProductAlreadyExistsException;
 import com.catalog.productms.exception.ProductNotFoundException;
 import com.catalog.productms.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;

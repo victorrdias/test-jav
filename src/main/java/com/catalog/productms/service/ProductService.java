@@ -2,6 +2,7 @@ package com.catalog.productms.service;
 
 import com.catalog.productms.dto.ProductRequest;
 import com.catalog.productms.entity.Product;
+import com.catalog.productms.exception.ProductAlreadyExistsException;
 import com.catalog.productms.exception.ProductNotFoundException;
 import com.catalog.productms.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,13 @@ public class ProductService {
 
     @Transactional
     public Product createProduct(ProductRequest request) {
+        // Check for duplicate product with same name and description
+        if (productRepository.existsByNameAndDescription(request.getName(), request.getDescription())) {
+            throw new ProductAlreadyExistsException(
+                "Product with name '" + request.getName() + "' and description '" + request.getDescription() + "' already exists"
+            );
+        }
+        
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
@@ -61,6 +69,11 @@ public class ProductService {
             throw new ProductNotFoundException(id);
         }
         productRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void deleteAllProducts() {
+        productRepository.deleteAll();
     }
 }
 

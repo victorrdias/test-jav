@@ -19,5 +19,7 @@ public interface ProductRepository extends JpaRepository<Product, String> {
     List<Product> searchProducts(@Param("q") String q,
                                  @Param("minPrice") BigDecimal minPrice,
                                  @Param("maxPrice") BigDecimal maxPrice);
+    
+    boolean existsByNameAndDescription(String name, String description);
 }
 

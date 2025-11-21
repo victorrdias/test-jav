@@ -107,5 +107,13 @@ public class ProductController {
         productService.deleteProduct(id);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping
+    @Operation(summary = "Delete all products", description = "Deletes all products from the catalog")
+    @ApiResponse(responseCode = "204", description = "All products deleted successfully")
+    public ResponseEntity<Void> deleteAllProducts() {
+        productService.deleteAllProducts();
+        return ResponseEntity.noContent().build();
+    }
 }
 

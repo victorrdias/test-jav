@@ -6,6 +6,8 @@ A REST API microservice for managing a product catalog, built with Java 25 and S
 
 - ✅ Full CRUD operations for products
 - ✅ Search and filter products by name, description, and price range
+- ✅ Duplicate product validation (name + description)
+- ✅ Delete all products endpoint
 - ✅ Bean Validation for input validation
 - ✅ MySQL database with Docker support
 - ✅ Swagger/OpenAPI documentation
@@ -85,6 +87,7 @@ Once the application is running, access the API documentation at:
 | `GET` | `/products` | Get all products |
 | `GET` | `/products/search` | Search products with filters |
 | `DELETE` | `/products/{id}` | Delete a product |
+| `DELETE` | `/products` | Delete all products |
 
 ### Product Model
 
@@ -158,6 +161,12 @@ curl "http://localhost:8085/products/search?q=laptop&min_price=1000&max_price=20
 curl -X DELETE http://localhost:8085/products/{id}
 ```
 
+#### Delete All Products
+
+```bash
+curl -X DELETE http://localhost:8085/products
+```
+
 ## Error Responses
 
 ### Validation Error (400 Bad Request)
@@ -166,6 +175,15 @@ curl -X DELETE http://localhost:8085/products/{id}
 {
   "status_code": 400,
   "message": "Price must be positive"
+}
+```
+
+### Duplicate Product (400 Bad Request)
+
+```json
+{
+  "status_code": 400,
+  "message": "Product with name 'Laptop' and description 'High performance laptop' already exists"
 }
 ```
 
