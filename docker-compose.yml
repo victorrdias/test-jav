@@ -4,13 +4,15 @@ services:
   mysql:
     image: mysql:8.0
     container_name: product-catalog-mysql
+    env_file:
+      - .env
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: product_catalog
-      MYSQL_USER: productuser
-      MYSQL_PASSWORD: productpass
+      MYSQL_DATABASE: ${DB_NAME:-product_catalog}
+      MYSQL_USER: ${DB_USERNAME:-productuser}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-productpass}
     ports:
-      - "3306:3306"
+      - "${DB_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:

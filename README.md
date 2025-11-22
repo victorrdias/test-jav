@@ -28,6 +28,8 @@ A production-ready REST API microservice for managing product catalogs, built wi
 - [Database](#-database)
 - [Docker](#-docker)
 - [Configuration](#-configuration)
+- [Troubleshooting](#-troubleshooting)
+- [Performance](#-performance)
 
 ---
 
@@ -40,21 +42,48 @@ git clone <repository-url>
 cd product-ms
 ```
 
-### 2. Start MySQL Database
+### 2. Configure Environment Variables
+
+```bash
+# Copy the example environment file
+cp env.example .env
+
+```
+
+**Important:** The `.env` file contains database credentials used by:
+
+- 🐳 **Docker** (creates MySQL with these credentials)
+- ☕ **Application** (connects to MySQL using these credentials)
+
+**Default credentials (development only):**
+
+```bash
+DB_USERNAME=productuser
+DB_PASSWORD=productpass
+DB_NAME=product_catalog
+```
+
+### 3. Start MySQL Database
 
 ```bash
 docker-compose up -d
 ```
 
-This starts MySQL on port `3306` with database `product_catalog`.
+This will:
 
-### 3. Build the Project
+1. Read credentials from `.env` file
+2. Create MySQL container with those credentials
+3. Start MySQL on port `3306` with database `product_catalog`
+
+> 💡 **Tip:** If you change credentials in `.env`, restart Docker: `docker-compose down && docker-compose up -d`
+
+### 4. Build the Project
 
 ```bash
 mvn clean install
 ```
 
-### 4. Run the Application
+### 5. Run the Application
 
 ```bash
 mvn spring-boot:run
@@ -62,7 +91,7 @@ mvn spring-boot:run
 
 The API will be available at: **http://localhost:8085**
 
-### 5. Access Swagger Documentation
+### 6. Access Swagger Documentation
 
 Open your browser and navigate to:
 
@@ -561,9 +590,19 @@ mvn test
 
 # Run tests with coverage report
 mvn clean test
+```
 
-# View coverage report
+**View coverage report:**
+
+```bash
+# macOS
 open target/site/jacoco/index.html
+
+# Windows
+start target/site/jacoco/index.html
+
+# Linux
+xdg-open target/site/jacoco/index.html
 ```
 
 ### Test Categories
@@ -679,43 +718,196 @@ docker-compose down -v
 
 ## ⚙️ Configuration
 
-### Application Properties
-
-```properties
-# Application
-spring.application.name=product-ms
-
-# Server
-server.port=8085
-
-# Database
-spring.datasource.url=jdbc:mysql://localhost:3306/product_catalog
-spring.datasource.username=productuser
-spring.datasource.password=productpass
-
-# JPA
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
-# Swagger
-springdoc.api-docs.path=/api-docs
-springdoc.swagger-ui.path=/swagger-ui.html
-```
-
 ### Environment Variables
 
-You can override properties using environment variables:
+#### How Credentials Work 🔐
+
+The database credentials flow works like this:
+
+```
+1. You set credentials in .env file:
+   ├─ DB_USERNAME=productuser
+   ├─ DB_PASSWORD=productpass
+   └─ DB_NAME=product_catalog
+
+2. docker-compose.yml reads .env and creates MySQL user:
+   ├─ MYSQL_USER=${DB_USERNAME}
+   ├─ MYSQL_PASSWORD=${DB_PASSWORD}
+   └─ MYSQL_DATABASE=${DB_NAME}
+
+3. Application reads .env and connects to MySQL:
+   ├─ spring.datasource.username=${DB_USERNAME}
+   ├─ spring.datasource.password=${DB_PASSWORD}
+   └─ jdbc:mysql://localhost:3306/${DB_NAME}
+
+✅ Result: Everything uses the same credentials!
+```
+
+**Key Point:** The credentials in `.env` are used by **both** Docker (to create the database user) and the Application (to connect to the database). They must match!
+
+---
+
+#### Setup Steps
+
+1. **Copy the example file:**
 
 ```bash
-export SERVER_PORT=8086
-export SPRING_DATASOURCE_URL=jdbc:mysql://production-host:3306/product_catalog
-export SPRING_DATASOURCE_USERNAME=prod_user
-export SPRING_DATASOURCE_PASSWORD=secure_password
+cp env.example .env
+```
+
+2. **Edit `.env` with your values:**
+
+```bash
+# Example .env file
+APP_NAME=product-ms
+SERVER_PORT=8085
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=product_catalog
+DB_USERNAME=productuser
+DB_PASSWORD=productpass
+
+# JPA Configuration
+JPA_DDL_AUTO=update
+JPA_SHOW_SQL=true
+JPA_FORMAT_SQL=true
+
+# Swagger Configuration
+SWAGGER_ENABLED=true
+API_DOCS_PATH=/api-docs
+SWAGGER_UI_PATH=/swagger-ui.html
+```
+
+3. **Load environment variables (Linux/Mac):**
+
+```bash
+export $(cat .env | xargs)
+mvn spring-boot:run
+```
+
+4. **Load environment variables (Windows PowerShell):**
+
+```powershell
+Get-Content .env | ForEach-Object {
+    $name, $value = $_.split('=')
+    Set-Item -Path env:$name -Value $value
+}
+mvn spring-boot:run
+```
+
+#### Configuration Variables
+
+| Variable          | Default          | Description        |
+| ----------------- | ---------------- | ------------------ |
+| `APP_NAME`        | product-ms       | Application name   |
+| `SERVER_PORT`     | 8085             | HTTP server port   |
+| `DB_HOST`         | localhost        | MySQL host         |
+| `DB_PORT`         | 3306             | MySQL port         |
+| `DB_NAME`         | product_catalog  | Database name      |
+| `DB_USERNAME`     | productuser      | Database username  |
+| `DB_PASSWORD`     | productpass      | Database password  |
+| `JPA_DDL_AUTO`    | update           | Hibernate DDL mode |
+| `JPA_SHOW_SQL`    | true             | Show SQL queries   |
+| `JPA_FORMAT_SQL`  | true             | Format SQL output  |
+| `SWAGGER_ENABLED` | true             | Enable Swagger UI  |
+| `API_DOCS_PATH`   | /api-docs        | API docs path      |
+| `SWAGGER_UI_PATH` | /swagger-ui.html | Swagger UI path    |
+
+---
+
+### Application Properties
+
+The `application.properties` file uses environment variables with fallback defaults:
+
+```properties
+# Application Configuration
+spring.application.name=${APP_NAME:product-ms}
+server.port=${SERVER_PORT:8085}
+
+# Database Configuration
+spring.datasource.url=jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:product_catalog}
+spring.datasource.username=${DB_USERNAME:productuser}
+spring.datasource.password=${DB_PASSWORD:productpass}
+
+# JPA Configuration
+spring.jpa.hibernate.ddl-auto=${JPA_DDL_AUTO:update}
+spring.jpa.show-sql=${JPA_SHOW_SQL:true}
+```
+
+**Pattern:** `${ENV_VAR:default_value}`
+
+- If `ENV_VAR` is set, use its value
+- If not set, use `default_value`
+
+---
+
+### Environment-Specific Configurations
+
+#### Development
+
+```bash
+# .env.development
+SERVER_PORT=8085
+DB_HOST=localhost
+JPA_SHOW_SQL=true
+SWAGGER_ENABLED=true
+```
+
+#### Production
+
+```bash
+# .env.production
+SERVER_PORT=8080
+DB_HOST=prod-mysql.example.com
+DB_USERNAME=prod_user
+DB_PASSWORD=secure_production_password
+JPA_SHOW_SQL=false
+SWAGGER_ENABLED=false
+JPA_DDL_AUTO=validate
 ```
 
 ---
 
-## 📊 Performance
+## 🔧 Troubleshooting
+
+### Database Connection Issues
+
+**Problem:** Application can't connect to MySQL  
+**Error:** `Access denied for user 'productuser'@'localhost'`
+
+**Solution:**
+
+```bash
+# 1. Check if .env file exists
+ls -la .env
+
+# 2. Verify credentials match
+cat .env | grep DB_
+
+# 3. Restart Docker with clean state
+docker-compose down -v  # Remove volumes (deletes data!)
+docker-compose up -d    # Recreate with new credentials
+
+# 4. Verify MySQL is running
+docker ps | grep mysql
+
+# 5. Test MySQL connection manually
+docker exec -it product-catalog-mysql mysql -u productuser -pproductpass product_catalog
+```
+
+### Common .env Issues
+
+| Issue                         | Solution                                                 |
+| ----------------------------- | -------------------------------------------------------- |
+| **`.env` file not found**     | Run `cp env.example .env`                                |
+| **Credentials don't match**   | Ensure `.env` has same values used by Docker & App       |
+| **Port 3306 already in use**  | Change `DB_PORT` in `.env` or stop other MySQL instances |
+| **Permission denied on .env** | Run `chmod 600 .env` (Linux/Mac)                         |
+| **Docker compose fails**      | Make sure `.env` file exists in project root             |
+
+---
 
 ### Optimizations Implemented
 
