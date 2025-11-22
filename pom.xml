@@ -111,7 +111,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.4</version>
                 <configuration>
-                    <argLine>-Xmx1024m</argLine>
+                    <!-- @{argLine} allows JaCoCo to inject its agent -->
+                    <argLine>@{argLine} -Xmx1024m</argLine>
                 </configuration>
             </plugin>
             
