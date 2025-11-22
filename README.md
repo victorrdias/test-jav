@@ -6,8 +6,10 @@ A REST API microservice for managing a product catalog, built with Java 25 and S
 
 - ✅ Full CRUD operations for products
 - ✅ Search and filter products by name, description, and price range
+- ✅ **Pagination support** for large datasets (GET /products and /products/search)
 - ✅ Duplicate product validation (name + description)
 - ✅ Delete all products endpoint
+- ✅ **Optimized database queries** (N+1 query prevention)
 - ✅ Bean Validation for input validation
 - ✅ MySQL database with Docker support
 - ✅ Swagger/OpenAPI documentation
@@ -157,6 +159,65 @@ Combined search:
 ```bash
 curl "http://localhost:8085/products/search?q=laptop&min_price=1000&max_price=2000"
 ```
+
+#### Pagination Support
+
+Both `GET /products` and `GET /products/search` support pagination to efficiently handle large datasets.
+
+**Query Parameters:**
+
+- `page`: Page number (0-based, default: 0)
+- `size`: Page size (default: 20, max: 100)
+
+**Example - Paginated Product List:**
+
+```bash
+# Get first page with 10 items
+curl "http://localhost:8085/products?page=0&size=10"
+
+# Get second page with 10 items
+curl "http://localhost:8085/products?page=1&size=10"
+```
+
+**Example - Paginated Search:**
+
+```bash
+# Search with pagination
+curl "http://localhost:8085/products/search?q=laptop&page=0&size=5"
+
+# Search by price range with pagination
+curl "http://localhost:8085/products/search?min_price=100&max_price=1000&page=0&size=10"
+```
+
+**Paginated Response Format:**
+
+```json
+{
+  "content": [
+    {
+      "id": "123",
+      "name": "Product Name",
+      "description": "Product Description",
+      "price": 99.99
+    }
+  ],
+  "pageNumber": 0,
+  "pageSize": 10,
+  "totalElements": 50,
+  "totalPages": 5,
+  "isFirst": true,
+  "isLast": false,
+  "hasNext": true,
+  "hasPrevious": false
+}
+```
+
+**Benefits:**
+
+- ✅ Prevents memory issues with large datasets
+- ✅ Faster response times
+- ✅ Better user experience
+- ✅ Backward compatible (works without pagination params)
 
 #### Delete a Product
 

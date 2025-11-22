@@ -11,6 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -277,6 +281,104 @@ class ProductControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(productService, times(1)).deleteAllProducts();
+    }
+
+    @Test
+    void getAllProducts_WithPagination_ShouldReturnPagedResponse() throws Exception {
+        Product product2 = new Product();
+        product2.setId("456");
+        product2.setName("Product 2");
+        product2.setDescription("Description 2");
+        product2.setPrice(new BigDecimal("49.99"));
+
+        List<Product> products = Arrays.asList(product, product2);
+        Page<Product> productPage = new PageImpl<>(products, PageRequest.of(0, 10), 2);
+        
+        when(productService.getAllProducts(any(Pageable.class))).thenReturn(productPage);
+
+        mockMvc.perform(get("/products")
+                .param("page", "0")
+                .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.pageSize").value(10))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1));
+
+        verify(productService, times(1)).getAllProducts(any(Pageable.class));
+        verify(productService, never()).getAllProducts();
+    }
+
+    @Test
+    void getAllProducts_WithOnlyPageParameter_ShouldReturnPagedResponse() throws Exception {
+        List<Product> products = Arrays.asList(product);
+        Page<Product> productPage = new PageImpl<>(products, PageRequest.of(0, 20), 1);
+        
+        when(productService.getAllProducts(any(Pageable.class))).thenReturn(productPage);
+
+        mockMvc.perform(get("/products")
+                .param("page", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.pageSize").value(20));
+
+        verify(productService, times(1)).getAllProducts(any(Pageable.class));
+    }
+
+    @Test
+    void searchProducts_WithPagination_ShouldReturnPagedResponse() throws Exception {
+        List<Product> products = Arrays.asList(product);
+        Page<Product> productPage = new PageImpl<>(products, PageRequest.of(0, 10), 1);
+        
+        when(productService.searchProducts(eq("Test"), eq(null), eq(null), any(Pageable.class)))
+                .thenReturn(productPage);
+
+        mockMvc.perform(get("/products/search")
+                .param("q", "Test")
+                .param("page", "0")
+                .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.pageNumber").value(0));
+
+        verify(productService, times(1)).searchProducts(eq("Test"), eq(null), eq(null), any(Pageable.class));
+        verify(productService, never()).searchProducts(any(), any(), any());
+    }
+
+    @Test
+    void searchProducts_WithPaginationAndAllFilters_ShouldReturnPagedResponse() throws Exception {
+        List<Product> products = Arrays.asList(product);
+        Page<Product> productPage = new PageImpl<>(products, PageRequest.of(1, 5), 10);
+        
+        when(productService.searchProducts(
+                eq("laptop"), 
+                eq(new BigDecimal("100")), 
+                eq(new BigDecimal("2000")), 
+                any(Pageable.class)))
+                .thenReturn(productPage);
+
+        mockMvc.perform(get("/products/search")
+                .param("q", "laptop")
+                .param("min_price", "100")
+                .param("max_price", "2000")
+                .param("page", "1")
+                .param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.pageNumber").value(1))
+                .andExpect(jsonPath("$.pageSize").value(5))
+                .andExpect(jsonPath("$.totalElements").value(10))
+                .andExpect(jsonPath("$.totalPages").value(2));
+
+        verify(productService, times(1)).searchProducts(
+                eq("laptop"), 
+                eq(new BigDecimal("100")), 
+                eq(new BigDecimal("2000")), 
+                any(Pageable.class));
     }
 }
 

@@ -6,6 +6,8 @@ import com.catalog.productms.exception.ProductAlreadyExistsException;
 import com.catalog.productms.exception.ProductNotFoundException;
 import com.catalog.productms.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,16 +61,26 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
+    public Page<Product> getAllProducts(Pageable pageable) {
+        return productRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
     public List<Product> searchProducts(String q, BigDecimal minPrice, BigDecimal maxPrice) {
         return productRepository.searchProducts(q, minPrice, maxPrice);
     }
 
+    @Transactional(readOnly = true)
+    public Page<Product> searchProducts(String q, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
+        return productRepository.searchProducts(q, minPrice, maxPrice, pageable);
+    }
+
     @Transactional
     public void deleteProduct(String id) {
-        if (!productRepository.existsById(id)) {
-            throw new ProductNotFoundException(id);
-        }
-        productRepository.deleteById(id);
+        // Optimized: Single DB call instead of existsById + deleteById
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+        productRepository.delete(product);
     }
 
     @Transactional

@@ -1,5 +1,6 @@
 package com.catalog.productms.controller;
 
+import com.catalog.productms.dto.PageResponse;
 import com.catalog.productms.dto.ProductRequest;
 import com.catalog.productms.dto.ProductResponse;
 import com.catalog.productms.entity.Product;
@@ -13,6 +14,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -69,9 +73,43 @@ public class ProductController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all products", description = "Retrieves all products in the catalog")
-    @ApiResponse(responseCode = "200", description = "List of products retrieved successfully")
-    public ResponseEntity<List<ProductResponse>> getAllProducts() {
+    @Operation(
+        summary = "Get all products", 
+        description = "Retrieves all products in the catalog. " +
+                     "Returns a list by default (backward compatible). " +
+                     "When pagination parameters (page or size) are provided, returns a paginated response with metadata."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Products retrieved successfully. " +
+                    "Returns List<ProductResponse> without pagination params, " +
+                    "or PageResponse<ProductResponse> with pagination params.")
+    })
+    public ResponseEntity<?> getAllProducts(
+            @Parameter(
+                description = "Page number (0-based). If provided, response will be paginated.", 
+                example = "0"
+            ) 
+            @RequestParam(required = false) Integer page,
+            @Parameter(
+                description = "Page size (default: 20, max: 100). If provided, response will be paginated.", 
+                example = "10"
+            ) 
+            @RequestParam(required = false) Integer size) {
+        
+        // If pagination parameters provided, return paginated response
+        if (page != null || size != null) {
+            int pageNumber = page != null ? page : 0;
+            int pageSize = size != null ? Math.min(size, 100) : 20; // Max 100 items per page
+            
+            Pageable pageable = PageRequest.of(pageNumber, pageSize);
+            
+            Page<Product> productPage = productService.getAllProducts(pageable);
+            Page<ProductResponse> responsePage = productPage.map(ProductResponse::fromEntity);
+            
+            return ResponseEntity.ok(PageResponse.fromPage(responsePage));
+        }
+        
+        // Default behavior: return all products (backward compatibility)
         List<Product> products = productService.getAllProducts();
         List<ProductResponse> response = products.stream()
                 .map(ProductResponse::fromEntity)
@@ -80,15 +118,57 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Search products", description = "Search products by query, min price, and max price")
-    @ApiResponse(responseCode = "200", description = "Search results retrieved successfully")
-    public ResponseEntity<List<ProductResponse>> searchProducts(
-            @Parameter(description = "Search query for name and description") 
+    @Operation(
+        summary = "Search products", 
+        description = "Search and filter products by text query (name/description), price range, with optional pagination. " +
+                     "All parameters are optional. Returns matching products as a list or paginated response."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Search results retrieved successfully. " +
+                    "Returns List<ProductResponse> without pagination params, " +
+                    "or PageResponse<ProductResponse> with pagination params.")
+    })
+    public ResponseEntity<?> searchProducts(
+            @Parameter(
+                description = "Search query - matches products where name or description contains this text (case-insensitive)", 
+                example = "laptop"
+            ) 
             @RequestParam(required = false) String q,
-            @Parameter(description = "Minimum price filter") 
+            @Parameter(
+                description = "Minimum price filter (inclusive) - only products with price >= this value", 
+                example = "100.00"
+            ) 
             @RequestParam(name = "min_price", required = false) BigDecimal minPrice,
-            @Parameter(description = "Maximum price filter") 
-            @RequestParam(name = "max_price", required = false) BigDecimal maxPrice) {
+            @Parameter(
+                description = "Maximum price filter (inclusive) - only products with price <= this value", 
+                example = "2000.00"
+            ) 
+            @RequestParam(name = "max_price", required = false) BigDecimal maxPrice,
+            @Parameter(
+                description = "Page number (0-based). If provided, response will be paginated.", 
+                example = "0"
+            ) 
+            @RequestParam(required = false) Integer page,
+            @Parameter(
+                description = "Page size (default: 20, max: 100). If provided, response will be paginated.", 
+                example = "5"
+            ) 
+            @RequestParam(required = false) Integer size) {
+        
+        // If pagination parameters provided, return paginated response
+        if (page != null || size != null) {
+            int pageNumber = page != null ? page : 0;
+            int pageSize = size != null ? Math.min(size, 100) : 20; // Max 100 items per page
+            
+            Pageable pageable = PageRequest.of(pageNumber, pageSize);
+            
+            Page<Product> productPage = productService.searchProducts(q, minPrice, maxPrice, pageable);
+            Page<ProductResponse> responsePage = productPage.map(ProductResponse::fromEntity);
+            
+            return ResponseEntity.ok(PageResponse.fromPage(responsePage));
+        }
+        
+        // Default behavior: return all matching products (backward compatibility)
         List<Product> products = productService.searchProducts(q, minPrice, maxPrice);
         List<ProductResponse> response = products.stream()
                 .map(ProductResponse::fromEntity)
