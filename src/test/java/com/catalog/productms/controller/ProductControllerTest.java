@@ -120,6 +120,23 @@ class ProductControllerTest {
     }
 
     @Test
+    void createProduct_WithPriceTooLarge_ShouldReturn400() throws Exception {
+        ProductRequest invalidRequest = new ProductRequest();
+        invalidRequest.setName("Test Product");
+        invalidRequest.setDescription("Test Description");
+        invalidRequest.setPrice(new BigDecimal("999999999.99")); // 9 digits before decimal (exceeds limit of 8)
+
+        mockMvc.perform(post("/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status_code").value(400))
+                .andExpect(jsonPath("$.message").value("Price must not exceed 99999999.99 (max 8 digits before decimal, 2 after)"));
+
+        verify(productService, never()).createProduct(any(ProductRequest.class));
+    }
+
+    @Test
     void updateProduct_WithValidRequest_ShouldReturn200() throws Exception {
         when(productService.updateProduct(eq("123"), any(ProductRequest.class))).thenReturn(product);
 

@@ -106,7 +106,260 @@ Once the application is running, access the API documentation at:
 
 - `name`: Required, cannot be blank
 - `description`: Required, cannot be blank
-- `price`: Required, must be positive (>= 0.01)
+- `price`: Required, must be positive (>= 0.01), maximum 99,999,999.99 (8 digits before decimal, 2 after)
+
+---
+
+## 🚨 Error Handling
+
+The API uses standardized error responses for all error scenarios. All errors (except 404 for product not found) return a JSON response with the following format:
+
+```json
+{
+  "status_code": 400,
+  "message": "Error description"
+}
+```
+
+### HTTP Status Codes
+
+| Status Code                    | Description          | When it occurs                                      |
+| ------------------------------ | -------------------- | --------------------------------------------------- |
+| **200 OK**                     | Success              | GET, PUT, DELETE operations successful              |
+| **201 Created**                | Resource created     | POST successful                                     |
+| **204 No Content**             | Success with no body | DELETE all products                                 |
+| **400 Bad Request**            | Invalid input        | Validation errors, malformed JSON, wrong data types |
+| **404 Not Found**              | Resource not found   | Product ID doesn't exist or invalid endpoint        |
+| **405 Method Not Allowed**     | Wrong HTTP method    | Using unsupported HTTP method (e.g., PATCH)         |
+| **415 Unsupported Media Type** | Wrong content type   | Using content type other than `application/json`    |
+| **500 Internal Server Error**  | Server error         | Unexpected server-side errors                       |
+
+---
+
+### Error Scenarios
+
+#### 1. Validation Errors (400 Bad Request)
+
+**Scenario:** Missing required fields, invalid data types, or constraint violations.
+
+**Examples:**
+
+- Missing `name`, `description`, or `price`
+- Empty string for required fields
+- Negative or zero price
+- Price exceeding maximum (99,999,999.99)
+- Duplicate product (same name and description)
+
+**Request:**
+
+```bash
+POST /products
+{
+  "name": "",
+  "description": "Test",
+  "price": -10
+}
+```
+
+**Response:**
+
+```json
+{
+  "status_code": 400,
+  "message": "Name is required, Price must be positive"
+}
+```
+
+**Price Too Large Example:**
+
+```bash
+POST /products
+{
+  "name": "Expensive Item",
+  "description": "Very expensive",
+  "price": 999999999.99
+}
+```
+
+**Response:**
+
+```json
+{
+  "status_code": 400,
+  "message": "Price must not exceed 99999999.99 (max 8 digits before decimal, 2 after)"
+}
+```
+
+---
+
+#### 2. Product Not Found (404 Not Found)
+
+**Scenario:** Attempting to GET, PUT, or DELETE a product that doesn't exist.
+
+**Request:**
+
+```bash
+GET /products/invalid-id-123
+```
+
+**Response:**
+
+```
+HTTP 404 Not Found
+(no response body)
+```
+
+> **Note:** 404 errors for products return **no body** - only the HTTP status code.
+
+---
+
+#### 3. Malformed JSON (400 Bad Request)
+
+**Scenario:** Sending invalid JSON syntax or wrong data types in request body.
+
+**Examples:**
+
+- Missing quotes, commas, or braces
+- Sending string instead of number for price
+- Invalid JSON structure
+
+**Request:**
+
+```bash
+POST /products
+{
+  "name": "Product",
+  "price": INVALID_JSON
+}
+```
+
+**Response:**
+
+```json
+{
+  "status_code": 400,
+  "message": "Invalid request format. Please check your JSON structure and data types."
+}
+```
+
+---
+
+#### 4. Wrong Parameter Type (400 Bad Request)
+
+**Scenario:** Sending wrong data type for query parameters (e.g., text instead of number for page/size).
+
+**Request:**
+
+```bash
+GET /products?page=abc&size=xyz
+```
+
+**Response:**
+
+```json
+{
+  "status_code": 400,
+  "message": "Invalid parameter type for 'page'. Expected type: Integer"
+}
+```
+
+---
+
+#### 5. Wrong Endpoint (404 Not Found)
+
+**Scenario:** Accessing an endpoint that doesn't exist.
+
+**Request:**
+
+```bash
+GET /products/search/invalid-endpoint
+```
+
+**Response:**
+
+```json
+{
+  "status_code": 404,
+  "message": "The requested endpoint does not exist"
+}
+```
+
+---
+
+#### 6. Wrong HTTP Method (405 Method Not Allowed)
+
+**Scenario:** Using an HTTP method not supported by the endpoint.
+
+**Request:**
+
+```bash
+PATCH /products/123
+```
+
+**Response:**
+
+```json
+{
+  "status_code": 405,
+  "message": "HTTP method PATCH is not supported for this endpoint"
+}
+```
+
+---
+
+#### 7. Unsupported Content Type (415 Unsupported Media Type)
+
+**Scenario:** Sending request with wrong `Content-Type` header.
+
+**Request:**
+
+```bash
+POST /products
+Content-Type: text/xml
+```
+
+**Response:**
+
+```json
+{
+  "status_code": 415,
+  "message": "Unsupported media type. Please use 'application/json'"
+}
+```
+
+---
+
+#### 8. Database Constraint Violation (400 Bad Request)
+
+**Scenario:** Violating database constraints (e.g., duplicate unique fields).
+
+**Response:**
+
+```json
+{
+  "status_code": 400,
+  "message": "Data integrity violation. Please check your input data."
+}
+```
+
+---
+
+#### 9. Server Error (500 Internal Server Error)
+
+**Scenario:** Unexpected server-side errors.
+
+**Response:**
+
+```json
+{
+  "status_code": 500,
+  "message": "An unexpected error occurred"
+}
+```
+
+> **Note:** Internal error details are **never exposed** to clients for security reasons.
+
+---
 
 ### Examples
 
