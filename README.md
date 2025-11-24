@@ -6,7 +6,7 @@
 [![Build](https://img.shields.io/badge/Build-Passing-success.svg)](/)
 [![Coverage](https://img.shields.io/badge/Coverage-80%25+-success.svg)](/)
 
-A production-ready REST API microservice for managing product catalogs, built with **Java 25** and **Spring Boot 3.5.7**.
+A REST API microservice for managing product catalogs, built with **Java 25** and **Spring Boot 3.5.7**.
 
 ---
 
@@ -113,7 +113,7 @@ Open your browser and navigate to:
 
 - ⚡ **Optimized Database Queries** - N+1 query prevention
 - 💾 **Efficient Memory Usage** - Paginated responses prevent OOM errors
-- 🚀 **Fast Response Times** - Indexed database columns
+- 🚀 **Fast Response Times** - Optimized query execution
 
 ### Code Quality
 
@@ -557,7 +557,7 @@ This microservice implements multiple security best practices:
 ### Error Handling
 
 - ✅ **Generic Error Messages** - No internal details exposed
-- ✅ **No Stack Traces** - Production errors don't reveal implementation
+- ✅ **No Stack Traces** - Errors don't reveal implementation details
 - ✅ **Consistent Format** - All errors use standard response structure
 
 ### Additional Security Measures
@@ -635,9 +635,7 @@ CREATE TABLE products (
     id VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description VARCHAR(1000) NOT NULL,
-    price DECIMAL(10, 2) NOT NULL,
-    INDEX idx_name (name),
-    INDEX idx_price (price)
+    price DECIMAL(10, 2) NOT NULL
 );
 ```
 
@@ -659,14 +657,6 @@ spring.datasource.url=jdbc:h2:mem:testdb
 spring.datasource.driver-class-name=org.h2.Driver
 spring.jpa.hibernate.ddl-auto=create-drop
 ```
-
-### Migrations
-
-The application uses Hibernate's `ddl-auto=update` for automatic schema management in development.
-
-**Production Recommendation:** Use a migration tool like Flyway or Liquibase.
-
----
 
 ## 🐳 Docker
 
@@ -855,19 +845,6 @@ JPA_SHOW_SQL=true
 SWAGGER_ENABLED=true
 ```
 
-#### Production
-
-```bash
-# .env.production
-SERVER_PORT=8080
-DB_HOST=prod-mysql.example.com
-DB_USERNAME=prod_user
-DB_PASSWORD=secure_production_password
-JPA_SHOW_SQL=false
-SWAGGER_ENABLED=false
-JPA_DDL_AUTO=validate
-```
-
 ---
 
 ## 🔧 Troubleshooting
@@ -915,7 +892,6 @@ docker exec -it product-catalog-mysql mysql -u productuser -pproductpass product
 | ------------------------ | -------------------- | ---------------------------------- |
 | **Pagination**           | 99% memory reduction | Prevents loading all records       |
 | **N+1 Query Prevention** | 50% faster deletes   | Single query instead of two        |
-| **Database Indexes**     | 10x faster searches  | Indexed name and price columns     |
 | **DTO Pattern**          | Reduced payload size | Only necessary fields in responses |
 
 ### Benchmarks
